@@ -1,0 +1,144 @@
+#include "../headers/define.h"
+#include "../headers/draw.h"
+#define FOV 90
+void fill3d (int x, int y, int *display, int width, int height, int color, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float zbuffer[WIDTH*HEIGHT]) {
+  float area1, area2, area3, total_area;
+  float alpha,beta,gamma;
+  if (x < WIDTH && y < HEIGHT && x > 0 && y > 0) {
+    if (display[x+y*width] != color ) {
+      /* Z pixel interpolation */
+      area1 = 0.5 * fabs(((x2 - x3)*(y-y3)) - ((x-x3)*(y2-y3)));
+      area2 = 0.5 * fabs(((x3 - x1)*(y-y1)) - ((x-x1)*(y3-y1)));
+      area3 = 0.5 * fabs(((x1 - x2)*(y-y2)) - ((x-x2)*(y1-y2)));
+      total_area = area1+area2+area3;
+
+      alpha = area1/total_area;
+      beta  = area2/total_area;
+      gamma = area3/total_area;
+      
+      if ((alpha*z1) + (beta*z2) + (gamma*z3) > zbuffer[x+y*width]) {
+        zbuffer[x+y*width] = (alpha*z1) + (beta*z2) + (gamma*z3);
+        display[x+y*width] = color;
+      }
+    
+      /* Spread */
+      fill3d(x+1, y, display, width, height, color, x1, y1, z1, x2, y2, z2, x3, y3, z3, zbuffer);
+      fill3d(x-1, y, display, width, height, color, x1, y1, z1, x2, y2, z2, x3, y3, z3, zbuffer);
+      fill3d(x, y+1, display, width, height, color, x1, y1, z1, x2, y2, z2, x3, y3, z3, zbuffer);
+      fill3d(x, y-1, display, width, height, color, x1, y1, z1, x2, y2, z2, x3, y3, z3, zbuffer);
+    }
+  }
+  else return;
+}
+
+
+
+void line3d(float x1, float y1, float z1, float x2, float y2, float z2, uint32_t *display, int width, int height, int color, float zbuffer[WIDTH*HEIGHT]) {
+
+  float xdiff, ydiff, zdiff;
+  float x,y,z;
+  extern float x_rot;
+  extern float y_rot;
+  extern float camx;
+  extern float camz;
+  
+
+  float sinX = sin(y_rot*(PI/180));
+  float cosX = cos(y_rot*(PI/180));
+  float sinY = sin(x_rot*(PI/180));
+  float cosY = cos(x_rot*(PI/180));
+
+
+  x1 = (x1-CENTERX);
+  x2 = (x2-CENTERX);
+  y1 = (y1-CENTERX);
+  y2 = (y2-CENTERX);
+
+
+
+  /* X Rotation */
+  x1 = ((z1*sinY)+(x1*cosY));
+  z1 = ((z1*cosY)-(x1*sinY));
+  x2 = ((z2*sinY)+(x2*cosY));
+  z2 = ((z2*cosY)-(x2*sinY));
+
+  /* Y Rotation */
+  y1 = ((y1*cosX)-(z1*sinX));
+  z1 = ((y1*sinX)+(z1*cosX));
+  y2 = ((y2*cosX)-(z2*sinX));
+  z2 = ((y2*sinX)+(z2*cosX));
+ 
+
+  x1 /= z1;
+  x1 *= FOV;
+  y1 /= z1;
+  y1 *= FOV;
+
+  x2 /= z2;
+  x2 *= FOV;
+  y2 /= z2;
+  y2 *= FOV;
+
+  x1 += CENTERX;
+  y1 += CENTERY;
+  x2 += CENTERX;
+  y2 += CENTERY;
+  //x1 = (z1 > 0) ? CENTERX+((x1-CENTERX)/(z1)) : CENTERX + (x1-CENTERX);
+  //y1 = (z1 > 0) ? CENTERY+((y1-CENTERY)/(z1)) : CENTERY + (y1-CENTERY);
+  //  
+  //x2 = (z2 > 0) ? CENTERX+((x2-CENTERX)/(z2)) : CENTERX + (x2-CENTERX);
+  //y2 = (z2 > 0) ? CENTERY+((y2-CENTERY)/(z2)) : CENTERY + (y2-CENTERY);
+  if (x2 >= x1) {
+    xdiff = x2-x1;
+    x = x1/*+x_rot*(WIDTH/180)*/;
+    ydiff = y2-y1;
+    y = y1/*+y_rot*(HEIGHT/180)*/;
+    zdiff = z2-z1;
+    z = z1;
+    
+  } else {
+    xdiff = x1-x2;
+    x = x2/*+x_rot*(WIDTH/180)*/;
+    ydiff = y1-y2;
+    y = y2/*+y_rot*(HEIGHT/180)*/;
+    zdiff = z1-z2;
+    z = z2;
+  }
+
+  
+  float length = sqrt((xdiff*xdiff) + (ydiff*ydiff));
+  float radians = atan((float)ydiff/(float)xdiff);
+  
+  if (length > 5000)
+    return;
+
+  for (int i = 0; i <= (int)length+1 ; i++) {
+
+    if ( (int)x + (int)y*width < WIDTH*HEIGHT && (int)x + (int)y*width > 0) {
+       if (z <= zbuffer[(int)x + (int)y*width] && x > 0 && y > 0 && x < WIDTH && y < HEIGHT && length < 5000 & z > 0) {
+           zbuffer[(int)x + (int)y*width] = z;
+           display[(int)x + (int)y*width] = color;
+       }
+    }
+    x += (cos(radians) <= 1.0 && cos(radians) >= -1.0) ? cos(radians) : 1;
+    y += (sin(radians) <= 1.0 && sin(radians) >= -1.0) ? sin(radians) : 1;
+    z += zdiff / length;
+  }
+
+}
+void trifill3d(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, uint32_t *display, int width, int height, int color, float zbuffer[]) {
+    line3d(x1, y1, z1, x2,y2,z2, display, width, height, color, zbuffer);
+    line3d(x3, y3, z3, x2,y2,z2, display, width, height, color, zbuffer);
+    line3d(x3, y3, z3, x1,y1,z1, display, width, height, color, zbuffer);
+}
+
+void quad3d(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4,uint32_t *display, int width, int height, int color, float zbuffer[]) {
+  trifill3d(x1, y1, z1, x2, y2, z2, x3, y3, z3, display, width, height, color, zbuffer);
+  trifill3d(x3, y3, z3, x2, y2, z2, x4, y4, z4, display, width, height, color, zbuffer);
+}
+/* Compatibility */
+
+//void trifill3d(float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, int *display, int width, int height, int color) {
+//  if (z1 > 0.5 && z2 > 0.5 && z3 > 0.5)
+//    trifill(CENTERX+((x1-CENTERX)/z1), CENTERY+((y1-CENTERY)/z1), CENTERX+((x2-CENTERX)/z2), CENTERY+((y2-CENTERY)/z2), CENTERX+((x3-CENTERX)/z3), CENTERY+((y3-CENTERY)/z3), display, width, height, color);
+//}

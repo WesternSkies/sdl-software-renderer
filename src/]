@@ -1,0 +1,148 @@
+#include <stdio.h>
+#include <SDL2/SDL.h>
+#include <stdbool.h>
+#include <math.h>
+#include <stdint.h>
+
+#include "../headers/define.h"
+#include "../headers/draw.h"
+#include "../headers/draw3d.h"
+
+
+float camx = 0.0, camy = 140.0, camz = 1.0;
+float x_speed, y_speed, z_speed;
+float x_rot = 0.0 ,y_rot = 0.0;
+float x_rot_speed = 0.0 ,y_rot_speed = 0.0;
+float draw_dist = 120.0;
+float cam_speed = 1.0;
+
+int main() {
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_Window *window = SDL_CreateWindow("",
+                                        SDL_WINDOWPOS_CENTERED, 
+                                        SDL_WINDOWPOS_CENTERED,
+                                        WIDTH, 
+                                        HEIGHT,
+                                        0);
+  SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+  unsigned int *pixels = window_surface->pixels;
+  float zbuffer[WIDTH*HEIGHT];
+  int x = 10, y = 30, width = window_surface->w, height = window_surface->h;
+
+  Uint32 pixel = SDL_MapRGBA(window_surface->format, 200, 130, 100, 255);
+  Uint8 r, g, b, a;
+
+  SDL_GetRGBA(pixel, window_surface->format, &r, &g, &b, &a);
+
+
+
+  uint8_t ticker = 0;
+
+  while (1)
+  {
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
+    {
+      if (event.type == SDL_QUIT) exit(0);
+      if (event.type == SDL_WINDOWEVENT) { /* Redraw if resized */
+        if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+          window_surface = SDL_GetWindowSurface(window);
+          pixels = window_surface->pixels;
+        }
+      }
+      if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+            case SDLK_w:
+             z_speed = -0.02;
+             break;
+            case SDLK_a:
+             x_speed = -1*cos(x_rot*cam_speed);
+             z_speed = 1*sin(x_rot*cam_speed);
+             break;
+            case SDLK_s:
+             z_speed = 0.02;
+             break;
+            case SDLK_d:
+             x_speed = 1*cos(x_rot*cam_speed);
+             z_speed = 1*sin(x_rot*cam_speed);
+             break;
+            case SDLK_UP:
+             y_speed = 2;
+             break;
+            case SDLK_DOWN:
+             y_speed = -2;
+             break;
+            case SDLK_RIGHT:
+             x_rot_speed = -1;
+             break;
+            case SDLK_LEFT:
+             x_rot_speed = 1;
+            default:
+             //x_speed = 0;
+             //y_speed = 0;
+             //z_speed = 0;
+             break;
+        }
+      }
+      if (event.type == SDL_KEYUP) {
+        switch (event.key.keysym.sym) {
+            case SDLK_w:
+             z_speed = 0;
+             break;
+            case SDLK_a:
+             x_speed = 0;
+             z_speed = 0;
+             break;
+            case SDLK_s:
+             z_speed = 0;
+             break;
+            case SDLK_d:
+             x_speed = 0;
+             z_speed = 0;
+             break;
+            case SDLK_UP:
+             y_speed = 0;
+             break;
+            case SDLK_DOWN:
+             y_speed = 0;
+             break;
+            case SDLK_RIGHT:
+             x_rot_speed = 0;
+             break;
+            case SDLK_LEFT:
+             x_rot_speed = 0;
+            default:
+             break;
+        }
+      }
+    }
+
+    SDL_UpdateWindowSurface(window);
+    ticker++;
+
+    if (ticker > 10) {
+      for (y = 0; y < height; ++y) {
+        for (x = 0; x < width; ++x) {
+          pixels[x + y * width] = 0xffffffff;
+          zbuffer[x + y * width] = draw_dist;
+        }
+      }
+      camx += x_speed;
+      camy += y_speed;
+      camz += z_speed;
+      x_rot += x_rot_speed;
+      y_rot += y_rot_speed;
+      quad3d(camx+300, camy+200, camz, camx+300, camy+200, camz+1, camx+300, camy+300, camz, camx+300, camy+300, camz+1, pixels, width, height, 0x0d00c9, zbuffer);
+      quad3d(camx+200, camy+200, camz, camx+200, camy+200, camz+1, camx+200, camy+300, camz, camx+200, camy+300, camz+1, pixels, width, height, 0xffc300, zbuffer);
+      quad3d(camx+200, camy+200, camz, camx+300, camy+200, camz, camx+200, camy+300, camz, camx+300, camy+300, camz, pixels, width, height, 0x24c900, zbuffer);
+      quad3d(camx+200, camy+200, camz+1, camx+300, camy+200, camz+1, camx+200, camy+300, camz+1, camx+300, camy+300, camz+1, pixels, width, height, 0xff0000, zbuffer);
+      
+    
+      //for (int i = 1; i < 30; i++) {
+      //    line3d(camx+200, camy+200, camz+0.2*i, camx+300, camy+200, camz+0.3*i, pixels, width, height, 0x0ff00, zbuffer);
+      //    line3d(camx+250, camy+100, camz+0.2*i, camx+250, camy+300, camz+0.2*i, pixels, width, height, 0xFF5733, zbuffer);
+      //}  
+      ticker = 0;
+    }
+  }
+}
