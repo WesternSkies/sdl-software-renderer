@@ -14,6 +14,7 @@ Only dependency other than standard libraries is SDL2. Once you have that instal
 
 ## Windows
 To quote the great [jdh](https://github.com/jdah/minecraft-weekend?tab=readme-ov-file#windows):
+
 *good luck 🤷‍♂️ probably try building under WSL and using an X environment to pass graphics through.*
 
 
