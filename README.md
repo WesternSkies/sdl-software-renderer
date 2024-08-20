@@ -9,6 +9,11 @@ make farther objects and objects which have normals that are rotated away from t
 Nothing fancy. 
 
 # Building
+## Mac OS and Linux
 Only dependency other than standard libraries is SDL2. Once you have that installed, just run the build script in the source directory. 
-Windows users, you are on your own for now.
+
+## Windows
+To quote the great [jdh](https://github.com/jdah/minecraft-weekend?tab=readme-ov-file#windows):
+*good luck 🤷‍♂️ probably try building under WSL and using an X environment to pass graphics through.*
+
 
