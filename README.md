@@ -17,4 +17,5 @@ To quote the great [jdh](https://github.com/jdah/minecraft-weekend?tab=readme-ov
 
 *good luck 🤷‍♂️ probably try building under WSL and using an X environment to pass graphics through.*
 
-
+If it isn't obvious, I am not the most advanced programmer, nor am I well-versed in FOSS best practices. 
+Give me a little bit of grace please, and advice if you have it too. 🙏
